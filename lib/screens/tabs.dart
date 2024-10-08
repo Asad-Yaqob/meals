@@ -1,57 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:meals/data/dummy_data.dart';
-
-import 'package:meals/models/meal.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meals/providers/filters_provider.dart';
+import 'package:meals/providers/favorites_provider.dart';
 import 'package:meals/screens/categories.dart';
 import 'package:meals/screens/filters.dart';
 import 'package:meals/screens/meals.dart';
 import 'package:meals/widgets/main_drawer.dart';
 
-const kInitializerFilters = {
-  "Gluten Free": false,
-  "Vegan Free": false,
-  "Vegetarian Free": false,
-  "Lactose Free": false
-};
+// const kInitializerFilters = {
+//   Filter.glutenFree: false,
+//   Filter.lactoseFree: false,
+//   Filter.veganFree: false,
+//   Filter.vegetarianFree: false
+// };
 
-class TabsScreen extends StatefulWidget {
+class TabsScreen extends ConsumerStatefulWidget {
   const TabsScreen({super.key});
 
   @override
-  State<StatefulWidget> createState() {
+  ConsumerState<TabsScreen> createState() {
     return _TabsScreenState();
   }
 }
 
-class _TabsScreenState extends State<TabsScreen> {
+class _TabsScreenState extends ConsumerState<TabsScreen> {
   int _selectedPageIndex = 0;
-  final List<Meal> favoriteMeals = [];
+  // final List<Meal> favoriteMeals = [];
 
-  Map<String, bool> selectedFilters = kInitializerFilters;
+  // Map<Filter, bool> selectedFilters = kInitializerFilters;
 
-  void showInfoMessage(String message) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
-  }
-
-  void manageFavoriteMeals(Meal meal) {
-    final isFavorite = favoriteMeals.contains(meal);
-    if (isFavorite) {
-      setState(() {
-        favoriteMeals.remove(meal);
-      });
-      showInfoMessage('Meal is removed from favorites!.');
-    } else {
-      setState(() {
-        favoriteMeals.add(meal);
-      });
-      showInfoMessage('Meal is added to favorites!.');
-    }
-  }
+  // void manageFavoriteMeals(Meal meal) {
+  //   final isFavorite = favoriteMeals.contains(meal);
+  //   if (isFavorite) {
+  //     setState(() {
+  //       favoriteMeals.remove(meal);
+  //     });
+  //     showInfoMessage('Meal is removed from favorites!.');
+  //   } else {
+  //     setState(() {
+  //       favoriteMeals.add(meal);
+  //     });
+  //     showInfoMessage('Meal is added to favorites!.');
+  //   }
+  // }
 
   void _selectedIndexChange(int index) {
     setState(() {
@@ -61,50 +52,33 @@ class _TabsScreenState extends State<TabsScreen> {
 
   void _setScreen(String identifier) async {
     Navigator.of(context).pop();
-    if (identifier == 'filters') {
-      final result = await Navigator.push<Map<String, bool>>(
-        context,
-        MaterialPageRoute(
-            builder: (ctx) => FiltersScreen(
-                  currentFilters: selectedFilters,
-                )),
-      );
+    if (identifier == 'meals') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (ctx) => const TabsScreen()));
+    }
 
-      setState(() {
-        selectedFilters = result ?? kInitializerFilters;
-      });
+    if (identifier == 'filters') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (ctx) => const FiltersScreen()),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final availableMeals = dummyMeals.where((meal) {
-      if (selectedFilters["Gluten Free"]! && !meal.isGlutenFree) {
-        return false;
-      }
-      if (selectedFilters["Vegan Free"]! && !meal.isVegan) {
-        return false;
-      }
-      if (selectedFilters["Vegetarian Free"]! && !meal.isVegetarian) {
-        return false;
-      }
-      if (selectedFilters["Lactose Free"]! && !meal.isLactoseFree) {
-        return false;
-      }
-      return true;
-    }).toList();
+    final availableMeals = ref.watch(filteredMealsProvider);
 
     Widget activePage = CategoriesScreen(
       availableMeals: availableMeals,
-      onToggleFavorite: manageFavoriteMeals,
     );
-    
+
     var selectedPageTitle = 'Categories';
 
     if (_selectedPageIndex == 1) {
+      final favoriteMeals = ref.watch(favoriteMealsProvider);
       activePage = MealsScreen(
         meals: favoriteMeals,
-        onToggleFavorite: manageFavoriteMeals,
       );
       selectedPageTitle = 'Your Favorites';
     }
